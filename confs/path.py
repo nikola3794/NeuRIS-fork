@@ -1,6 +1,14 @@
+import socket
+import getpass
 import os
 
+
+username = getpass.getuser()
+host = socket.gethostname()
+
+#if username == 'nipopovic' and host == 'archer':
 BIN_DIR = "/home/ethan/Research/NeuRIS"
+
 DIR_MVG_BUILD = BIN_DIR + "/openMVG_Build"
 DIR_MVS_BUILD = BIN_DIR + "/openMVS_build"
 
