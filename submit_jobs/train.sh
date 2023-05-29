@@ -12,10 +12,10 @@
 ########SBATCH --gpus=rtx_2080_ti:1
 
 #module load python_gpu/3.7.4
-#PYTHONPATH=
-#export PYTHONPATH
 
-module load open3d/0.9.0
+PYTHONPATH=
+export PYTHONPATH
+module load cuda/10.2.89 open3d/0.9.0
 
 source /cluster/home/nipopovic/python_envs/neuris/bin/activate
 
