@@ -868,8 +868,9 @@ class Runner:
         #     pts_peak_all = pts_peak_all.reshape([H, W, 3])
 
         #     return imgs_render['confidence'], imgs_render['color_peak'], imgs_render['normal_peak'], imgs_render['depth_peak'], pts_peak_all, imgs_render['confidence_mask']
-
-        return psnr_render_neuris, psnr_peak_neuris, psnr_render_torchmetrics, psnr_peak_torchmetrics
+        
+        if save_image_render:
+            return psnr_render_neuris, psnr_peak_neuris, psnr_render_torchmetrics, psnr_peak_torchmetrics
     
     def compare_ncc_confidence(self, idx=-1, resolution_level=-1):
         # validate image
@@ -1247,14 +1248,14 @@ if __name__ == '__main__':
         if runner.model_type == 'neus':
             psnr_render_neuris = []; psnr_peak_neuris = [];
             psnr_render_torchmetrics = []; psnr_peak_torchmetrics = [];
-            for i in range(0, runner.dataset.n_images, 2):
+            for i in range(0, runner.dataset.n_images, 1):
                 t1 = datetime.now()
                 psnr_render_neuris_i, psnr_peak_neuris_i, psnr_render_torchmetrics_i, psnr_peak_torchmetrics_i =\
                     runner.validate_image(i, resolution_level=1, 
                                             save_normalmap_npz=args.save_render_peak, 
                                             save_peak_value=True,
                                             save_image_render=args.nvs,
-                                            validate_confidence=False)
+                                            validate_confidence=True)
                 if psnr_render_neuris_i is not None:
                     try:
                         psnr_render_neuris_i = psnr_render_neuris_i.item()
