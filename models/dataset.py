@@ -409,7 +409,7 @@ class Dataset:
 
         if self.denoise_gray_image:
             dir_denoise = f'{self.data_dir}/image_denoised_cv{self.denoise_paras[0]:02d}{self.denoise_paras[1]:02d}{self.denoise_paras[2]:02d}{self.denoise_paras[3]:02d}'
-            if not checkExistence(dir_denoise) and len(get_files_stem(dir_denoise, '.png'))==0:
+            if not checkExistence(dir_denoise) and len(get_files_stem(dir_denoise, '.png'))==0 or True: # TODO Always do this
                 logging.info(f'Use opencv structural denoise...')
                 for i in tqdm(range(self.n_images)):
                     img_idx = (self.images_np[i]*256)
