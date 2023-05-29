@@ -854,14 +854,13 @@ class Runner:
 
             lis_imgs.append(img_temp)
         
-        # TODO
-        # dir_images = os.path.join(self.base_exp_dir, 'images')
-        # os.makedirs(dir_images, exist_ok=True)
-        # img_gt = ImageUtils.resize_image(self.dataset.images[idx].cpu().numpy(), 
-        #                                     (lis_imgs[0].shape[1], lis_imgs[0].shape[0]))
-        # img_sample[img_temp3_mask_use_prior] = img_gt[img_temp3_mask_use_prior]*255
-        # ImageUtils.write_image_lis(f'{dir_images}/{self.iter_step:08d}_reso{resolution_level}_{idx:08d}.png',
-        #                                 [img_gt, img_sample] + lis_imgs)
+        dir_images = os.path.join(self.base_exp_dir, 'images')
+        os.makedirs(dir_images, exist_ok=True)
+        img_gt = ImageUtils.resize_image(self.dataset.images[idx].cpu().numpy(), 
+                                            (lis_imgs[0].shape[1], lis_imgs[0].shape[0]))
+        img_sample[img_temp3_mask_use_prior] = img_gt[img_temp3_mask_use_prior]*255
+        ImageUtils.write_image_lis(f'{dir_images}/{self.iter_step:08d}_reso{resolution_level}_{idx:08d}.png',
+                                        [img_gt, img_sample] + lis_imgs)
 
         # TODO
         # if save_peak_value:
