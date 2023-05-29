@@ -1,6 +1,8 @@
 import cv2 as cv
 import numpy as np
 import os, logging, argparse, trimesh, copy
+import getpass
+import socket
 
 import torch
 import torch.nn.functional as F
@@ -1159,7 +1161,15 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format=FORMAT)
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--conf', type=str, default='./confs/neuris.conf')
+    
+    username = getpass.getuser()
+    host = socket.gethostname()
+    if username == 'nipopovic' and host == 'archer':
+        parser.add_argument('--conf', type=str, default='./confs/neuris.conf')
+    elif username == 'nipopovic' and os.path.expanduser("~") == '/cluster/home/nipopovic':
+        parser.add_argument('--conf', type=str, default='./confs/neuris_euler.conf')
+    else:
+        raise NotImplementedError
     parser.add_argument('--mode', type=str, default='train')
     parser.add_argument('--model_type', type=str, default='')
     parser.add_argument('--threshold', type=float, default=0.0)
