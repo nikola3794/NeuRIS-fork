@@ -5,7 +5,7 @@
 #SBATCH -n 1
 #SBATCH --cpus-per-task=16
 #SBATCH --mem-per-cpu=4096
-#SBATCH --gpus={N_GPU}  
+#SBATCH --gpus=1 
 #SBATCH --gres=gpumem:20000m
 #SBATCH --job-name=test
 
