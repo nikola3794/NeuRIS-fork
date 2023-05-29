@@ -155,6 +155,7 @@ class Runner:
         self.conf['dataset']['use_plane_offset_loss'] = True if self.conf['model.loss.plane_offset_weight'] > 0 else False
 
         self.conf['dataset']['data_dir']  = os.path.join(self.conf['general.data_dir'] , self.dataset_type, self.scan_name)
+        self.conf['dataset']['script_mode'] = self.mode
         self.dataset = Dataset(self.conf['dataset'])
 
     def build_model(self):
@@ -769,7 +770,9 @@ class Runner:
                 pts_world2 = pts_world_peak.reshape([H, W, 3])
                 np.savez(os.path.join(self.base_exp_dir, 'depth', f'{self.iter_step:08d}_{idx}_reso{resolution_level}_peak.npz'),
                             pts_world2)
-            
+        
+        psnr_render = None
+        psnr_peak = None
         if save_image_render:
             os.makedirs(os.path.join(self.base_exp_dir, 'image_render'), exist_ok=True)
             ImageUtils.write_image(os.path.join(self.base_exp_dir, 'image_render', f'{self.iter_step:08d}_{self.dataset.vec_stem_files[idx]}_reso{resolution_level}.png'), 
@@ -827,12 +830,15 @@ class Runner:
         ImageUtils.write_image_lis(f'{dir_images}/{self.iter_step:08d}_reso{resolution_level}_{idx:08d}.png',
                                         [img_gt, img_sample] + lis_imgs)
 
-        if save_peak_value:
-            pts_peak_all = np.concatenate(pts_peak_all, axis=0)
-            pts_peak_all = pts_peak_all.reshape([H, W, 3])
+        # TODO
+        # if save_peak_value:
+        #     pts_peak_all = np.concatenate(pts_peak_all, axis=0)
+        #     pts_peak_all = pts_peak_all.reshape([H, W, 3])
 
-            return imgs_render['confidence'], imgs_render['color_peak'], imgs_render['normal_peak'], imgs_render['depth_peak'], pts_peak_all, imgs_render['confidence_mask']
+        #     return imgs_render['confidence'], imgs_render['color_peak'], imgs_render['normal_peak'], imgs_render['depth_peak'], pts_peak_all, imgs_render['confidence_mask']
 
+        return psnr_render, psnr_peak
+    
     def compare_ncc_confidence(self, idx=-1, resolution_level=-1):
         # validate image
         ic(self.iter_step, idx)
@@ -1178,10 +1184,16 @@ if __name__ == '__main__':
     parser.add_argument('--checkpoint_id', type=int, default=-1)
     parser.add_argument('--mc_reso', type=int, default=512, help='Marching cube resolution')
     parser.add_argument('--reset_var', action= 'store_true', help='Reset variance for validate_iamge()' )
-    parser.add_argument('--nvs', action= 'store_true', default=True, help='Novel view synthesis' ) # TODO Changed to true on default
-    parser.add_argument('--save_render_peak', action= 'store_true', help='Novel view synthesis' )
+    parser.add_argument('--nvs', action= 'store_true', help='Novel view synthesis' )
+    parser.add_argument('--save_render_peak', action= 'store_true', help='Novel view synthesis' ) 
     parser.add_argument('--scene_name', type=str, default='scene0050_00', help='Scene or scan name')
     args = parser.parse_args()
+
+    # TODO 
+    # args.mode = 'validate_image'
+    # args.is_continue = True
+    # args.save_render_peak = True
+    # args.nvs = True
 
     torch.cuda.set_device(args.gpu)
     runner = Runner(args.conf, args.scene_name, args.mode, args.model_type, args.is_continue, args.checkpoint_id)
@@ -1199,17 +1211,22 @@ if __name__ == '__main__':
             t1= datetime.now()
             runner.validate_mesh_nerf(world_space=True, resolution=args.mc_reso, threshold=thres)
             logging.info(f"[Validate mesh] Consumed time (MC resolution: {args.mc_reso}； Threshold: {thres}): {IOUtils.get_consumed_time(t1):.02f}(s)")
-    
     elif args.mode.startswith('validate_image'):
         if runner.model_type == 'neus':
+            psnr_render = []; psnr_peak = [];
             for i in range(0, runner.dataset.n_images, 2):
                 t1 = datetime.now()
-                runner.validate_image(i, resolution_level=1, 
+                psnr_render_i, psnr_peak_i = runner.validate_image(i, resolution_level=1, 
                                             save_normalmap_npz=args.save_render_peak, 
                                             save_peak_value=True,
                                             save_image_render=args.nvs)
+                if psnr_render_i is not None:
+                    psnr_render.append(psnr_render_i)
+                    psnr_peak.append(psnr_peak_i)
                 logging.info(f"validating image time is : {(datetime.now()-t1).total_seconds()}")
-        
+            from statistics import mean
+            logging.info(f"[eval] PSNR render mean: {mean(psnr_render)}")
+            logging.info(f"[eval] PSNR peak mean: {mean(psnr_peak)}")
         elif runner.model_type == 'nerf':
             for i in range(0, runner.dataset.n_images, 2):
                 t1 = datetime.now()

@@ -140,11 +140,16 @@ class Dataset:
     def __init__(self, conf):
         super(Dataset, self).__init__()
 
-        self.which_split = 'train'
-
         # logging.info('Load data: Begin')
         self.device = torch.device('cuda')
         self.conf = conf
+
+        if self.conf['script_mode'] == 'train':
+            self.which_split = 'train'
+        elif self.conf['script_mode'] == 'validate_image':
+            self.which_split = 'test'
+        else:
+            raise NotImplementedError
 
         self.data_dir = conf['data_dir']
         self.cache_all_data = conf['cache_all_data']

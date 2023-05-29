@@ -25,6 +25,10 @@ cd /cluster/project/cvl/specta/code/NeuRIS-fork
 
 
 /cluster/home/nipopovic/python_envs/neuris/bin/python -u exp_runner.py \
---scene_name=scene0050_00
+--scene_name=scene0050_00 \
+--mode=validate_image \
+--is_continue \
+--save_render_peak \
+--nvs
 
 
