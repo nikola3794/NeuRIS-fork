@@ -798,22 +798,22 @@ class Runner:
                 np.savez(os.path.join(self.base_exp_dir, 'depth', f'{self.iter_step:08d}_{idx}_reso{resolution_level}_peak.npz'),
                             pts_world2)
         
-        psnr_render = None
-        psnr_peak = None
-        psnr_render_torchmetrics = None
-        psnr_peak_torchmetrics = None
+        psnr_render_neuris = 0.0
+        psnr_render_torchmetrics = 0.0
+        psnr_peak_neuris = 0.0
+        psnr_peak_torchmetrics = 0.0
         if save_image_render:
             os.makedirs(os.path.join(self.base_exp_dir, 'image_render'), exist_ok=True)
             ImageUtils.write_image(os.path.join(self.base_exp_dir, 'image_render', f'{self.iter_step:08d}_{self.dataset.vec_stem_files[idx]}_reso{resolution_level}.png'), 
                         imgs_render['color_fine']*255)
             psnr_render_neuris = 20.0 * torch.log10(1.0 / (((self.dataset.images[idx] - torch.from_numpy(imgs_render['color_fine']))**2).sum() / (imgs_render['color_fine'].size * 3.0)).sqrt())
             psnr_render_torchmetrics = psnr_torchmetrics(torch.from_numpy(imgs_render['color_fine']), self.dataset.images[idx])
-
-            os.makedirs(os.path.join(self.base_exp_dir, 'image_peak'), exist_ok=True)
-            ImageUtils.write_image(os.path.join(self.base_exp_dir, 'image_peak', f'{self.iter_step:08d}_{self.dataset.vec_stem_files[idx]}_reso{resolution_level}.png'), 
-                        imgs_render['color_peak']*255)    
-            psnr_peak_neuris = 20.0 * torch.log10(1.0 / (((self.dataset.images[idx] - torch.from_numpy(imgs_render['color_peak']))**2).sum() / (imgs_render['color_peak'].size * 3.0)).sqrt())
-            psnr_peak_torchmetrics = psnr_torchmetrics(torch.from_numpy(imgs_render['color_peak']), self.dataset.images[idx])
+            if save_peak_value:
+                os.makedirs(os.path.join(self.base_exp_dir, 'image_peak'), exist_ok=True)
+                ImageUtils.write_image(os.path.join(self.base_exp_dir, 'image_peak', f'{self.iter_step:08d}_{self.dataset.vec_stem_files[idx]}_reso{resolution_level}.png'), 
+                            imgs_render['color_peak']*255)    
+                psnr_peak_neuris = 20.0 * torch.log10(1.0 / (((self.dataset.images[idx] - torch.from_numpy(imgs_render['color_peak']))**2).sum() / (imgs_render['color_peak'].size * 3.0)).sqrt())
+                psnr_peak_torchmetrics = psnr_torchmetrics(torch.from_numpy(imgs_render['color_peak']), self.dataset.images[idx])
 
             print(f'PSNR_neuris (rener, peak): {psnr_render_neuris}  {psnr_peak_neuris}')
             print(f'PSNR_torchmetrics (rener, peak): {psnr_render_torchmetrics}  {psnr_peak_torchmetrics}')
@@ -1249,13 +1249,13 @@ if __name__ == '__main__':
             psnr_render_neuris = []; psnr_peak_neuris = [];
             psnr_render_torchmetrics = []; psnr_peak_torchmetrics = [];
             for i in range(0, runner.dataset.n_images, 1):
-                if i == 2:
-                    break
+                # if i == 2:
+                #     break
                 t1 = datetime.now()
                 psnr_render_neuris_i, psnr_peak_neuris_i, psnr_render_torchmetrics_i, psnr_peak_torchmetrics_i =\
                     runner.validate_image(i, resolution_level=1, 
                                             save_normalmap_npz=args.save_render_peak, 
-                                            save_peak_value=True,
+                                            save_peak_value=False,
                                             save_image_render=args.nvs,
                                             validate_confidence=True)
                 if psnr_render_neuris_i is not None:
