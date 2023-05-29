@@ -14,14 +14,101 @@ from scipy.spatial.transform import Slerp
 
 from utils.utils_image import read_images, write_image, write_images
 from utils.utils_io import checkExistence, ensure_dir_existence, get_path_components, get_files_stem
-from utils.utils_geometry import get_pose_inv, get_world_normal, quat_to_rot, save_points
+#from utils.utils_geometry import get_pose_inv, get_world_normal, quat_to_rot, save_points
 
-import utils.utils_geometry as GeoUtils
+#import utils.utils_geometry as GeoUtils
 import utils.utils_io as IOUtils
 import models.patch_match_cuda as PatchMatch
 import utils.utils_training as TrainingUtils
 import utils.utils_image as ImageUtils
 
+########################## TODO TODO TODO TODO TODO ##########################def get_world_points(depth, intrinsics, extrinsics):
+       
+def get_world_points(depth, intrinsics, extrinsics):
+    '''
+    Args:
+        depthmap: H*W
+        intrinsics: 3*3 or 4*4
+        extrinsics: 4*4, world to camera
+    Return:
+        points: N*3, in world space 
+    '''
+    if intrinsics.shape[0] ==4:
+        intrinsics = intrinsics[:3,:3]
+        
+    height, width = depth.shape
+
+    x, y = np.meshgrid(np.arange(0, width), np.arange(0, height))
+
+    # valid_points = np.ma.masked_greater(depth, 0.0).mask
+    # x, y, depth = x[valid_points], y[valid_points], depth[valid_points]
+
+    x = x.reshape((1, height*width))
+    y = y.reshape((1, height*width))
+    depth = depth.reshape((1, height*width))
+
+    xyz_ref = np.matmul(np.linalg.inv(intrinsics),
+                        np.vstack((x, y, np.ones_like(x))) * depth)
+    xyz_world = np.matmul(np.linalg.inv(extrinsics),
+                            np.vstack((xyz_ref, np.ones_like(x))))[:3]
+    xyz_world = xyz_world.transpose((1, 0))
+
+    return xyz_world 
+
+
+def get_pose_inv(pose):
+    # R = pose[:3, :3]
+    # T = pose[:3, 3]
+    # R_inv = R.transpose()
+    # T_inv = -R_inv @ T
+    # pose_inv = np.identity(4)
+    # pose_inv[:3, :3] = R_inv
+    # pose_inv[:3, 3] = T_inv
+    return np.linalg.inv(pose)
+
+
+def get_world_normal(normal, extrin):
+    '''
+    Args:
+        normal: N*3
+        extrinsics: 4*4, world to camera
+    Return:
+        normal: N*3, in world space 
+    '''
+    extrinsics = copy.deepcopy(extrin)
+    if torch.is_tensor(extrinsics):
+        extrinsics = extrinsics.cpu().numpy()
+        
+    assert extrinsics.shape[0] ==4
+    normal = normal.transpose()
+    extrinsics[:3, 3] = np.zeros(3)  # only rotation, no translation
+
+    normal_world = np.matmul(np.linalg.inv(extrinsics),
+                            np.vstack((normal, np.ones((1, normal.shape[1])))))[:3]
+    normal_world = normal_world.transpose((1, 0))
+
+    return normal_world
+
+def quat_to_rot(q):
+    batch_size, _ = q.shape
+    q = F.normalize(q, dim=1)
+    R = torch.ones((batch_size, 3,3)).cuda()
+    qr=q[:,0]
+    qi = q[:, 1]
+    qj = q[:, 2]
+    qk = q[:, 3]
+    R[:, 0, 0]=1-2 * (qj**2 + qk**2)
+    R[:, 0, 1] = 2 * (qj *qi -qk*qr)
+    R[:, 0, 2] = 2 * (qi * qk + qr * qj)
+    R[:, 1, 0] = 2 * (qj * qi + qk * qr)
+    R[:, 1, 1] = 1-2 * (qi**2 + qk**2)
+    R[:, 1, 2] = 2*(qj*qk - qi*qr)
+    R[:, 2, 0] = 2 * (qk * qi-qj * qr)
+    R[:, 2, 1] = 2 * (qj*qk + qi*qr)
+    R[:, 2, 2] = 1-2 * (qi**2 + qj**2)
+    return R
+
+########################## TODO TODO TODO TODO TODO ########################## 
 
 def load_K_Rt_from_P(filename, P=None):
     if P is None:
@@ -198,12 +285,13 @@ class Dataset:
                 dir_depths_cloud = f'{self.data_dir}/depth_cloud'
                 ensure_dir_existence(dir_depths_cloud)
                 
-                for i in range(5):
-                    ext_curr = get_pose_inv(self.pose_all[i].detach().cpu().numpy())
-                    pts = GeoUtils.get_world_points( self.depths_np[i], self.intrinsics_all[i], ext_curr)
-                    normals_curr = self.normals_np[i].reshape(-1,3)
-                    colors = self.images_np[i].reshape(-1,3)
-                    save_points(f'{dir_depths_cloud}/{stems_depth[i]}.ply', pts, colors, normals_curr)
+                # for i in range(5):
+                #     ext_curr = get_pose_inv(self.pose_all[i].detach().cpu().numpy())
+                #     #pts = GeoUtils.get_world_points( self.depths_np[i], self.intrinsics_all[i], ext_curr)
+                #     pts = get_world_points( self.depths_np[i], self.intrinsics_all[i], ext_curr)
+                #     normals_curr = self.normals_np[i].reshape(-1,3)
+                #     colors = self.images_np[i].reshape(-1,3)
+                #     save_points(f'{dir_depths_cloud}/{stems_depth[i]}.ply', pts, colors, normals_curr)
 
         if self.use_planes:
             raise NotImplementedError
