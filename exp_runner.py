@@ -27,6 +27,12 @@ import utils.utils_geometry as GeoUtils
 import utils.utils_image as ImageUtils
 import utils.utils_training as TrainingUtils
 
+n_scenes_list = [
+    '0050_00',
+    '0580_00',
+    '0616_00',
+    #'0084_00',
+]
 
 def psnr_torchmetrics(preds, target, data_range=1.0, base=10.0):
     diff = preds - target
@@ -1246,7 +1252,7 @@ if __name__ == '__main__':
                 psnr_render_neuris_i, psnr_peak_neuris_i, psnr_render_torchmetrics_i, psnr_peak_torchmetrics_i =\
                     runner.validate_image(i, resolution_level=1, 
                                             save_normalmap_npz=args.save_render_peak, 
-                                            save_peak_value=False,
+                                            save_peak_value=True,
                                             save_image_render=args.nvs,
                                             validate_confidence=False)
                 if psnr_render_neuris_i is not None:
