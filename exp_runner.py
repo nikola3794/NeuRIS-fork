@@ -6,6 +6,7 @@ import socket
 
 import torch
 import torch.nn.functional as F
+from torch import Tensor, tensor
 from torch.utils.tensorboard import SummaryWriter
 
 from models.dataset import Dataset
@@ -26,7 +27,29 @@ import utils.utils_geometry as GeoUtils
 import utils.utils_image as ImageUtils
 import utils.utils_training as TrainingUtils
 
+from torchmetrics import PeakSignalNoiseRatio
 
+
+def psnr_torchmetrics(preds, target, data_range=1.0, base=10.0):
+    diff = preds - target
+    sum_squared_error = torch.sum(diff * diff)
+    n_obs = tensor(target.numel()).to(preds.device)
+    psnr_base_e = 2 * torch.log(tensor(data_range).to(preds.device)) - torch.log(sum_squared_error / n_obs)
+    psnr_vals = psnr_base_e * (10 / torch.log(tensor(base)))
+    return psnr_vals.mean()
+
+def psnr_neuris(preds, target):
+    return 20.0 * torch.log10(1.0 / (((target - preds)**2).sum() / (preds.numel() * 3.0)).sqrt())
+
+#20.0 * torch.log10(1.0 / (((self.dataset.images[idx] - torch.from_numpy(imgs_render['color_fine']))**2).sum() / (imgs_render['color_fine'].size * 3.0)).sqrt())
+
+a = torch.ones((480, 640, 3))
+b = torch.rand_like(a)
+
+res1 = psnr_torchmetrics(a,b)
+res2 = psnr_neuris(a,b)
+
+a = 1
 class Runner:
     def __init__(self, conf_path, scene_name = '', mode='train', model_type='', is_continue=False, checkpoint_id = -1):
         # Initial setting: Genreal
@@ -773,18 +796,23 @@ class Runner:
         
         psnr_render = None
         psnr_peak = None
+        psnr_render_torchmetrics = None
+        psnr_peak_torchmetrics = None
         if save_image_render:
             os.makedirs(os.path.join(self.base_exp_dir, 'image_render'), exist_ok=True)
             ImageUtils.write_image(os.path.join(self.base_exp_dir, 'image_render', f'{self.iter_step:08d}_{self.dataset.vec_stem_files[idx]}_reso{resolution_level}.png'), 
                         imgs_render['color_fine']*255)
-            psnr_render = 20.0 * torch.log10(1.0 / (((self.dataset.images[idx] - torch.from_numpy(imgs_render['color_fine']))**2).sum() / (imgs_render['color_fine'].size * 3.0)).sqrt())
-            
+            psnr_render_neuris = 20.0 * torch.log10(1.0 / (((self.dataset.images[idx] - torch.from_numpy(imgs_render['color_fine']))**2).sum() / (imgs_render['color_fine'].size * 3.0)).sqrt())
+            psnr_render_torchmetrics = psnr_torchmetrics(torch.from_numpy(imgs_render['color_fine']), self.dataset.images[idx])
+
             os.makedirs(os.path.join(self.base_exp_dir, 'image_peak'), exist_ok=True)
             ImageUtils.write_image(os.path.join(self.base_exp_dir, 'image_peak', f'{self.iter_step:08d}_{self.dataset.vec_stem_files[idx]}_reso{resolution_level}.png'), 
                         imgs_render['color_peak']*255)    
-            psnr_peak = 20.0 * torch.log10(1.0 / (((self.dataset.images[idx] - torch.from_numpy(imgs_render['color_peak']))**2).sum() / (imgs_render['color_peak'].size * 3.0)).sqrt())
-            
-            print(f'PSNR (rener, peak): {psnr_render}  {psnr_peak}')
+            psnr_peak_neuris = 20.0 * torch.log10(1.0 / (((self.dataset.images[idx] - torch.from_numpy(imgs_render['color_peak']))**2).sum() / (imgs_render['color_peak'].size * 3.0)).sqrt())
+            psnr_peak_torchmetrics = psnr_torchmetrics(torch.from_numpy(imgs_render['color_peak']), self.dataset.images[idx])
+
+            print(f'PSNR_neuris (rener, peak): {psnr_render_neuris}  {psnr_peak_neuris}')
+            print(f'PSNR_torchmetrics (rener, peak): {psnr_render_torchmetrics}  {psnr_peak_torchmetrics}')
         
         # (3) save images
         lis_imgs = []
@@ -837,7 +865,7 @@ class Runner:
 
         #     return imgs_render['confidence'], imgs_render['color_peak'], imgs_render['normal_peak'], imgs_render['depth_peak'], pts_peak_all, imgs_render['confidence_mask']
 
-        return psnr_render, psnr_peak
+        return psnr_render_neuris, psnr_peak_neuris, psnr_render_torchmetrics, psnr_peak_torchmetrics
     
     def compare_ncc_confidence(self, idx=-1, resolution_level=-1):
         # validate image
@@ -1213,20 +1241,25 @@ if __name__ == '__main__':
             logging.info(f"[Validate mesh] Consumed time (MC resolution: {args.mc_reso}； Threshold: {thres}): {IOUtils.get_consumed_time(t1):.02f}(s)")
     elif args.mode.startswith('validate_image'):
         if runner.model_type == 'neus':
-            psnr_render = []; psnr_peak = [];
+            psnr_render_neuris = []; psnr_peak_neuris = [];
+            psnr_render_torchmetrics = []; psnr_peak_torchmetrics = [];
             for i in range(0, runner.dataset.n_images, 2):
                 t1 = datetime.now()
-                psnr_render_i, psnr_peak_i = runner.validate_image(i, resolution_level=1, 
+                psnr_render_neuris_i, psnr_peak_neuris_i, psnr_render_torchmetrics_i, psnr_peak_torchmetrics_i =\
+                    runner.validate_image(i, resolution_level=1, 
                                             save_normalmap_npz=args.save_render_peak, 
-                                            save_peak_value=True,
-                                            save_image_render=args.nvs)
-                if psnr_render_i is not None:
-                    psnr_render.append(psnr_render_i)
-                    psnr_peak.append(psnr_peak_i)
+                                            save_peak_value=False,
+                                            save_image_render=args.nvs,
+                                            validate_confidence=False)
+                if psnr_render_neuris is not None:
+                    psnr_render_neuris.append(psnr_render_neuris_i)
+                    psnr_peak_neuris.append(psnr_peak_neuris_i)
+                    psnr_render_torchmetrics.append(psnr_render_torchmetrics_i)
+                    psnr_peak_torchmetrics.append(psnr_peak_torchmetrics_i)
                 logging.info(f"validating image time is : {(datetime.now()-t1).total_seconds()}")
             from statistics import mean
-            logging.info(f"[eval] PSNR render mean: {mean(psnr_render)}")
-            logging.info(f"[eval] PSNR peak mean: {mean(psnr_peak)}")
+            logging.info(f"[eval] NEURIS MEAN PSNR render, peak: {mean(psnr_render_neuris)}, {mean(psnr_peak_neuris)}")
+            logging.info(f"[eval] TORCHMETRICS MEAN PSNR render, peak: {mean(psnr_render_torchmetrics)}, {mean(psnr_peak_torchmetrics)}")
         elif runner.model_type == 'nerf':
             for i in range(0, runner.dataset.n_images, 2):
                 t1 = datetime.now()

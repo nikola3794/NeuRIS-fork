@@ -17,4 +17,5 @@ pyrender
 matplotlib
 scikit-learn
 pandas
+torchmetrics
 pycuda
