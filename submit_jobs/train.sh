@@ -9,7 +9,7 @@
 #SBATCH --gres=gpumem:20000m
 #SBATCH --job-name=test
 
-########SBATCH --gpus=rtx_2080_ti:1
+#########SBATCH --gpus=rtx_2080_ti:1
 
 # PYTHONPATH=
 module load cuda/10.2.89 open3d/0.9.0
