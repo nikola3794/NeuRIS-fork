@@ -1249,6 +1249,8 @@ if __name__ == '__main__':
             psnr_render_neuris = []; psnr_peak_neuris = [];
             psnr_render_torchmetrics = []; psnr_peak_torchmetrics = [];
             for i in range(0, runner.dataset.n_images, 1):
+                if i == 2:
+                    break
                 t1 = datetime.now()
                 psnr_render_neuris_i, psnr_peak_neuris_i, psnr_render_torchmetrics_i, psnr_peak_torchmetrics_i =\
                     runner.validate_image(i, resolution_level=1, 
