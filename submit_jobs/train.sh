@@ -14,6 +14,9 @@
 #module load python_gpu/3.7.4
 #PYTHONPATH=
 #export PYTHONPATH
+
+module load open3d/0.9.0
+
 source /cluster/home/nipopovic/python_envs/neuris/bin/activate
 
 nvidia-smi
