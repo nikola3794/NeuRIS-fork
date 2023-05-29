@@ -12,10 +12,12 @@
 ########SBATCH --gpus=rtx_2080_ti:1
 
 # PYTHONPATH=
-# export PYTHONPATH
 module load cuda/10.2.89 open3d/0.9.0
 
+export PYTHONPATH=
+
 source /cluster/home/nipopovic/python_envs/neuris/bin/activate
+
 
 nvidia-smi
 
