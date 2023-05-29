@@ -11,22 +11,20 @@
 
 ########SBATCH --gpus=rtx_2080_ti:1
 
-#module load python_gpu/3.7.4
-#module load cuda/10.2.89
-
-PYTHONPATH=
-export PYTHONPATH
-module load cuda/10.2.89
+# PYTHONPATH=
+# export PYTHONPATH
+module load cuda/10.2.89 open3d/0.9.0
 
 source /cluster/home/nipopovic/python_envs/neuris/bin/activate
-
-module load open3d/0.9.0
 
 nvidia-smi
 
 cd /cluster/project/cvl/specta/code/NeuRIS-fork
 
 
-/cluster/home/nipopovic/python_envs/neuris/bin/python -u exp_runner.py 
+/cluster/home/nipopovic/python_envs/neuris/bin/python -u exp_runner.py \
+--scene_name=scene0050_00 \
+--nvs \
+
 
 
