@@ -1251,7 +1251,23 @@ if __name__ == '__main__':
                                             save_peak_value=False,
                                             save_image_render=args.nvs,
                                             validate_confidence=False)
-                if psnr_render_neuris is not None:
+                if psnr_render_neuris_i is not None:
+                    try:
+                        psnr_render_neuris_i = psnr_render_neuris_i.item()
+                    except:
+                        pass
+                    try:
+                        psnr_peak_neuris_i = psnr_peak_neuris_i.item()
+                    except:
+                        pass
+                    try:
+                        psnr_render_torchmetrics_i = psnr_render_torchmetrics_i.item()
+                    except:
+                        pass
+                    try:
+                        psnr_peak_torchmetrics_i = psnr_peak_torchmetrics_i.item()
+                    except:
+                        pass
                     psnr_render_neuris.append(psnr_render_neuris_i)
                     psnr_peak_neuris.append(psnr_peak_neuris_i)
                     psnr_render_torchmetrics.append(psnr_render_torchmetrics_i)
