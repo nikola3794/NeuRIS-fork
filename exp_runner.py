@@ -27,8 +27,6 @@ import utils.utils_geometry as GeoUtils
 import utils.utils_image as ImageUtils
 import utils.utils_training as TrainingUtils
 
-from torchmetrics import PeakSignalNoiseRatio
-
 
 def psnr_torchmetrics(preds, target, data_range=1.0, base=10.0):
     diff = preds - target
