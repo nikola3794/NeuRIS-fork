@@ -1257,7 +1257,7 @@ if __name__ == '__main__':
                                             save_normalmap_npz=args.save_render_peak, 
                                             save_peak_value=True,
                                             save_image_render=args.nvs,
-                                            validate_confidence=False)
+                                            validate_confidence=True)
                 if psnr_render_neuris_i is not None:
                     try:
                         psnr_render_neuris_i = psnr_render_neuris_i.item()
