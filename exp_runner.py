@@ -862,14 +862,14 @@ class Runner:
         ImageUtils.write_image_lis(f'{dir_images}/{self.iter_step:08d}_reso{resolution_level}_{idx:08d}.png',
                                         [img_gt, img_sample] + lis_imgs)
 
-        if save_image_render:
-            return psnr_render_neuris, psnr_peak_neuris, psnr_render_torchmetrics, psnr_peak_torchmetrics
+        # if save_image_render:
+        #     return psnr_render_neuris, psnr_peak_neuris, psnr_render_torchmetrics, psnr_peak_torchmetrics
         
-        # if save_peak_value:
-        #     pts_peak_all = np.concatenate(pts_peak_all, axis=0)
-        #     pts_peak_all = pts_peak_all.reshape([H, W, 3])
+        if save_peak_value:
+            pts_peak_all = np.concatenate(pts_peak_all, axis=0)
+            pts_peak_all = pts_peak_all.reshape([H, W, 3])
 
-        #     return imgs_render['confidence'], imgs_render['color_peak'], imgs_render['normal_peak'], imgs_render['depth_peak'], pts_peak_all, imgs_render['confidence_mask']
+            return imgs_render['confidence'], imgs_render['color_peak'], imgs_render['normal_peak'], imgs_render['depth_peak'], pts_peak_all, imgs_render['confidence_mask']
         
     
     def compare_ncc_confidence(self, idx=-1, resolution_level=-1):

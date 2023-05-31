@@ -252,6 +252,9 @@ class Dataset:
             normals_np = []
             normals_npz, stems_normal = read_images(f'{self.data_dir}/pred_normal', target_img_size=(w_img, h_img), img_ext='.npz')
             # TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO
+            logging.info(f'Adding additional gaussian noise to normal vectors')
+            normals_npz += 0.05*np.random.normal(size=normals_npz.shape)
+            normals_npz /= np.linalg.norm(normals_npz, axis=-1, keepdims=True)
             if self.which_split == 'train':
                 normals_npz = normals_npz[::self.half_step*2]; 
                 stems_normal = stems_normal[::self.half_step*2]
